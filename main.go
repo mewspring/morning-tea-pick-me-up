@@ -2,7 +2,12 @@ package main
 
 import (
 	"log"
+	"os"
+	"time"
 
+	"github.com/faiface/beep"
+	"github.com/faiface/beep/flac"
+	"github.com/faiface/beep/speaker"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/mewkiz/pkg/imgutil"
@@ -20,6 +25,7 @@ func run() {
 }
 
 func f() error {
+	// Load images.
 	pic, err := loadPicture("penguin.jpeg")
 	if err != nil {
 		return errors.WithStack(err)
@@ -30,18 +36,26 @@ func f() error {
 	}
 	picBounds := pic.Bounds()
 	sprite := pixel.NewSprite(pic, picBounds)
+	// Init window.
 	cfg := pixelgl.WindowConfig{
-		Title:  "penguin",
+		Title:  "Alanso says Vraaaarrra :)",
 		Bounds: picBounds,
 	}
 	win, err := pixelgl.NewWindow(cfg)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+	// Draw loop.
 	for !win.Closed() {
 		win.Update()
 		if win.JustPressed(pixelgl.MouseButton1) {
 			sprite.Set(flipper, picBounds)
+			// Play sound.
+			snd, err := loadSound("macaroni.flac")
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			speaker.Play(snd)
 		} else if win.JustPressed(pixelgl.MouseButton2) {
 			sprite.Set(pic, picBounds)
 		}
@@ -57,4 +71,17 @@ func loadPicture(path string) (pixel.Picture, error) {
 	}
 	pic := pixel.PictureDataFromImage(img)
 	return pic, nil
+}
+
+func loadSound(path string) (beep.StreamSeekCloser, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	s, format, err := flac.Decode(f)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+	return s, nil
 }
