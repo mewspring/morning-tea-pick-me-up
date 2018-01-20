@@ -46,16 +46,25 @@ func f() error {
 		return errors.WithStack(err)
 	}
 	// Draw loop.
+	played := false
 	for !win.Closed() {
 		win.Update()
 		if win.JustPressed(pixelgl.MouseButton1) {
 			sprite.Set(flipper, picBounds)
 			// Play sound.
-			snd, err := loadSound("macaroni.flac")
-			if err != nil {
-				return errors.WithStack(err)
+			if !played {
+				f := func() {
+					played = false
+				}
+				snd, err := loadSound("macaroni.flac")
+				if err != nil {
+					return errors.WithStack(err)
+				}
+				callback := beep.Callback(f)
+				seq := beep.Seq(snd, callback)
+				speaker.Play(seq)
 			}
-			speaker.Play(snd)
+			played = true
 		} else if win.JustPressed(pixelgl.MouseButton2) {
 			sprite.Set(pic, picBounds)
 		}
